@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evo Moment 37 Practice</title>
+    <style>
+        @font-face {
+            font-family: 'Sans';
+            src: url('fonts/street-fighter-alpha-3-xl-colour/street-fighter-alpha-3-xl-colour.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sans', sans-serif;
+            background-color: #413c3c;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+
+        h1 {
+            background: linear-gradient(to bottom, rgb(255, 77, 0), rgb(255, 179, 0));
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+            font-size: 48px;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 0;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            font-family: 'Sans', sans-serif;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: calc(100vh - 140px);
+            padding-top: 160px;
+            position: relative;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            font-family: 'Sans', sans-serif;
+        }
+
+        .grid-container.first-scene {
+            grid-template-areas: "blindButton regularButton";
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        .instructions {
+            grid-column: 1 / span 2;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .blind-mode-button {
+            grid-area: blindButton;
+        }
+
+        .regular-mode-button {
+            grid-area: regularButton;
+        }
+
+        .grid-container.second-scene {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding-top: 60px;
+        }
+
+        video {
+            display: none;
+            width: 80%;
+            max-width: 1000px;
+            max-height: 60vh;
+            border: 2px solid rgb(255, 128, 0);
+            border-radius: 10px;
+        }
+
+        .mode-button, .retry-button, .main-menu-button {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: linear-gradient(to bottom, rgb(255, 77, 0), rgb(255, 179, 0));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            text-align: center;
+            font-family: 'Sans', sans-serif;
+        }
+
+        .mode-button:hover, .retry-button:hover, .main-menu-button:hover {
+            background-color: rgb(255, 77, 0);
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 10px;
+        }
+
+        #feedback {
+            font-size: 50px;
+            font-weight: bold;
+            min-height: 30px;
+            text-align: center;
+            margin-top: -50px;
+            font-family: 'Sans', sans-serif;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(to bottom, red, red);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .video-fail {
+            filter: hue-rotate(180deg);
+        }
+
+        .parry-feedback {
+            font-size: 30px;
+            color: green;
+            position: absolute;
+            top: 40%;
+            transform: translateY(-50%);
+            display: none;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>Evo Moment 37 Practice</h1>
+
+    <div class="content">
+        <div class="grid-container first-scene" id="menu">
+            <div class="instructions">
+                USE KEYS: ArrowLeft, A, 4.
+            </div>
+            <button class="mode-button blind-mode-button">Blind Mode</button>
+            <button class="mode-button regular-mode-button" id="regularMode">Regular Mode</button>
+        </div>
+
+        <div class="grid-container second-scene" id="gameScene" style="display: none;">
+            <video controls id="gameVideo">
+                <source src="video/evomoment1.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+
+            <div id="feedback"></div>
+            <div class="parry-feedback" id="parryFeedback"></div>
+
+            <div class="button-container">
+                <button class="main-menu-button" id="mainMenuButton">Main Menu</button>
+                <button class="retry-button" id="retryButton">Retry</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('gameVideo');
+            const regularModeButton = document.getElementById('regularMode');
+            const feedback = document.getElementById('feedback');
+            const parryFeedback = document.getElementById('parryFeedback');
+            const retryButton = document.getElementById('retryButton');
+            const mainMenuButton = document.getElementById('mainMenuButton');
+            const menu = document.getElementById('menu');
+            const gameScene = document.getElementById('gameScene');
+            let gameActive = false;
+            let currentParryIndex = 0;
+
+            const targetTimes = [3.5, 3.8, 4.1, 4.4, 4.8, 5.1, 5.4, 5.9, 6.2, 6.5, 6.8, 7.1, 7.4, 7.7, 8.4];
+            const parryWindow = 0.1667;
+
+            function startRegularMode() {
+                gameActive = true;
+                video.currentTime = 0;
+                video.style.display = 'block';
+                video.play();
+                feedback.textContent = '';
+                parryFeedback.style.display = 'none';
+                parryFeedback.style.opacity = 1;
+                currentParryIndex = 0;
+                menu.style.display = 'none';
+                gameScene.style.display = 'flex';
+            }
+
+            function handleFailure() {
+                video.classList.add('video-fail');
+                video.pause();
+                feedback.textContent = 'You failed';
+                feedback.style.color = 'red';
+                gameActive = false;
+            }
+
+            function retryGame() {
+                video.classList.remove('video-fail');
+                startRegularMode();
+            }
+
+            function returnToMenu() {
+                video.pause();
+                video.currentTime = 0;
+                gameScene.style.display = 'none';
+                menu.style.display = 'flex';
+                feedback.textContent = '';
+            }
+
+            regularModeButton.addEventListener('click', () => {
+                startRegularMode();
+            });
+
+            retryButton.addEventListener('click', retryGame);
+
+            mainMenuButton.addEventListener('click', returnToMenu);
+
+            document.addEventListener('keydown', (event) => {
+                if (!gameActive || currentParryIndex >= targetTimes.length) return;
+
+                const validKeys = ['ArrowLeft', 'a', 'A', '4'];
+                if (!validKeys.includes(event.key)) return;
+
+                const pressTime = video.currentTime;
+                evaluatePress(pressTime);
+            });
+
+            function evaluatePress(pressTime) {
+                const targetTime = targetTimes[currentParryIndex];
+                const delta = targetTime - pressTime;
+
+                if (delta >= 0 && delta <= parryWindow) {
+                    parryFeedback.textContent = `Perfect Parry at ${pressTime.toFixed(2)}s!`;
+                    parryFeedback.style.display = 'block';
+                    setTimeout(() => {
+                        parryFeedback.style.opacity = 0;
+                    }, 0);
+                    setTimeout(() => {
+                        parryFeedback.style.display = 'none';
+                        parryFeedback.style.opacity = 1;
+                    }, 200);
+                    currentParryIndex++;
+                    if (currentParryIndex === targetTimes.length) {
+                        parryFeedback.textContent += ' All parries completed!';
+                    }
+                } else {
+                    handleFailure();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
