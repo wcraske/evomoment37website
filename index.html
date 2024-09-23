@@ -101,7 +101,6 @@
             width: 80%;
             max-width: 1000px;
             max-height: 60vh;
-            border: 2px solid rgb(255, 128, 0);
             border-radius: 10px;
         }
 
@@ -176,7 +175,8 @@
         </div>
 
         <div class="grid-container second-scene" id="gameScene" style="display: none;">
-            <video controls id="gameVideo">
+            <!-- Preload video to avoid lag -->
+            <video id="gameVideo" preload="auto">
                 <source src="video/evomoment1.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
@@ -218,6 +218,15 @@
                 currentParryIndex = 0;
                 menu.style.display = 'none';
                 gameScene.style.display = 'flex';
+
+                video.addEventListener('timeupdate', checkFirstParryMiss);
+            }
+
+            function checkFirstParryMiss() {
+                if (video.currentTime > targetTimes[0] + parryWindow && currentParryIndex === 0) {
+                    handleFailure();
+                    video.removeEventListener('timeupdate', checkFirstParryMiss);
+                }
             }
 
             function handleFailure() {
@@ -251,9 +260,6 @@
 
             document.addEventListener('keydown', (event) => {
                 if (!gameActive || currentParryIndex >= targetTimes.length) return;
-
-                const validKeys = ['ArrowLeft', 'a', 'A', '4'];
-                if (!validKeys.includes(event.key)) return;
 
                 const pressTime = video.currentTime;
                 evaluatePress(pressTime);
